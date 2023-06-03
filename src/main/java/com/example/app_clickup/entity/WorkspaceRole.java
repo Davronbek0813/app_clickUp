@@ -1,7 +1,6 @@
 package com.example.app_clickup.entity;
-
-import com.example.appclickup.entity.enums.WorkspaceRoleName;
-import com.example.appclickup.entity.template.AbsUUIDEntity;
+import com.example.app_clickup.entity.enums.WorkspaceRoleName;
+import com.example.app_clickup.entity.template.AbsUUIDEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

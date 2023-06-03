@@ -1,7 +1,9 @@
 package com.example.app_clickup.entity;
 
-import com.example.appclickup.entity.enums.SystemRoleName;
-import com.example.appclickup.entity.template.AbsUUIDEntity;
+
+
+import com.example.app_clickup.entity.enums.SystemRoleName;
+import com.example.app_clickup.entity.template.AbsUUIDEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,8 +20,8 @@ import java.util.Collections;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
-public class User extends AbsUUIDEntity  implements UserDetails {
+@Entity(name = "users")
+public class User extends AbsUUIDEntity implements UserDetails {
     private String fullName;
 
     @Column(unique = true, nullable = false)
@@ -30,6 +32,8 @@ public class User extends AbsUUIDEntity  implements UserDetails {
     private String color;
 
     private String initialLetter;
+
+    private String emailCode;;
 
     @OneToOne(fetch = FetchType.LAZY)
     private Attachment avatar;
@@ -72,5 +76,15 @@ public class User extends AbsUUIDEntity  implements UserDetails {
     @Override
     public boolean isEnabled() {
         return this.enabled;
+    }
+
+    public User(String fullName, String email, String password, SystemRoleName systemRoleName, boolean accountNonLocked, boolean accountNonExpired, boolean credentialsNonExpired) {
+        this.fullName = fullName;
+        this.email = email;
+        this.password = password;
+        this.systemRoleName = systemRoleName;
+        this.accountNonLocked=accountNonLocked;
+        this.accountNonExpired=accountNonExpired;
+        this.credentialsNonExpired=credentialsNonExpired;
     }
 }

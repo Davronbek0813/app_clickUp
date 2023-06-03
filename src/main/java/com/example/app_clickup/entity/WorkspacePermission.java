@@ -1,8 +1,9 @@
 
 package com.example.app_clickup.entity;
 
-import com.example.appclickup.entity.enums.WorkspacePermissionName;
-import com.example.appclickup.entity.template.AbsLongEntity;
+
+import com.example.app_clickup.entity.enums.WorkspacePermissionName;
+import com.example.app_clickup.entity.template.AbsLongEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

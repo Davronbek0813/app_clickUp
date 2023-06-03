@@ -1,6 +1,6 @@
 package com.example.app_clickup.entity.template;
 
-import com.example.appclickup.entity.User;
+import com.example.app_clickup.entity.User;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
