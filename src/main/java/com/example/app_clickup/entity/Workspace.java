@@ -20,6 +20,7 @@ public class Workspace extends AbsLongEntity {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private String color;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -30,4 +31,18 @@ public class Workspace extends AbsLongEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Attachment avatar;
+
+    @PrePersist
+    @PreUpdate
+    //bazaga saqlashdan oldin yoki update qilyatgan mpaytda ishllaydi bu anotatsiyalar
+    public void setInitialLetterMyMethod(){
+        this.initialLeter = name.substring(0,1);
+    }
+
+    public Workspace(String name, String color, User owner,  Attachment avatar) {
+        this.name = name;
+        this.color = color;
+        this.owner = owner;
+        this.avatar = avatar;
+    }
 }
