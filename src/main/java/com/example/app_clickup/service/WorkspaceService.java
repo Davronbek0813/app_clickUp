@@ -4,6 +4,7 @@ import com.example.app_clickup.entity.User;
 import com.example.app_clickup.payload.ApiResponse;
 import com.example.app_clickup.payload.MemberDTO;
 import com.example.app_clickup.payload.WorkspaceDTO;
+import com.example.app_clickup.payload.WorkspaceRoleDTO;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,4 +22,9 @@ public interface WorkspaceService {
     List<MemberDTO> getMemberAndGuest(Long id);
 
     List<WorkspaceDTO> getMyWorkspace(User user);
+
+    ApiResponse addOrRemovePermissionToRole(WorkspaceRoleDTO workspaceRoleDTO);
+
+    ApiResponse addRole(Long workspaceId, WorkspaceRoleDTO workspaceRoleDTO, User user);
+
 }

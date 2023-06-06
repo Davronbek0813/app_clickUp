@@ -4,6 +4,7 @@ import com.example.app_clickup.entity.User;
 import com.example.app_clickup.payload.ApiResponse;
 import com.example.app_clickup.payload.MemberDTO;
 import com.example.app_clickup.payload.WorkspaceDTO;
+import com.example.app_clickup.payload.WorkspaceRoleDTO;
 import com.example.app_clickup.security.CurrentUser;
 import com.example.app_clickup.service.WorkspaceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +31,8 @@ public class WorkspaceController {
     }
 
 //    Name, color, avatar o'zgarishi mumkin
-    @PutMapping("/{id}")
-    public HttpEntity<?> editWorkspace(@PathVariable Long id, @RequestBody WorkspaceDTO workspaceDTO) {
+    @PutMapping()
+    public HttpEntity<?> editWorkspace(@RequestBody WorkspaceDTO workspaceDTO) {
         ApiResponse apiResponse = workspaceService.editWorkspace(workspaceDTO);
         return ResponseEntity.status(apiResponse.isSuccess() ? 200 : 409).body(apiResponse);
     }
@@ -46,6 +47,12 @@ public class WorkspaceController {
     public HttpEntity<?> getMyWorkspace(@CurrentUser User user){
         List<WorkspaceDTO> workspaces = workspaceService.getMyWorkspace(user);
         return ResponseEntity.ok(workspaces);
+    }
+
+    @PutMapping("/addOrRemovePermission")
+    public HttpEntity<?> addOrRemovePermissionToRole(@RequestBody WorkspaceRoleDTO workspaceRoleDTO){
+        ApiResponse apiResponse = workspaceService.addOrRemovePermissionToRole(workspaceRoleDTO);
+        return ResponseEntity.status(apiResponse.isSuccess()?200:409).body(apiResponse);
     }
 
     @PutMapping("/changeOwner/{id}")
@@ -71,8 +78,12 @@ public class WorkspaceController {
     public HttpEntity<?> joinToWorkspace(@RequestParam Long id, @CurrentUser User user){
         ApiResponse apiResponse = workspaceService.joinToWorkspace(id, user);
         return ResponseEntity.status(apiResponse.isSuccess()?200:409).body(apiResponse);
+    }
 
-
+    @PostMapping("/role")
+    public HttpEntity<?> addRole(@RequestParam Long workspaceId, @RequestBody WorkspaceRoleDTO workspaceRoleDTO, @CurrentUser User user){
+        ApiResponse apiResponse = workspaceService.addRole(workspaceId,workspaceRoleDTO,user);
+        return ResponseEntity.ok(apiResponse);
     }
 
 }

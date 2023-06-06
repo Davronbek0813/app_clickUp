@@ -66,7 +66,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         mailSender.setHost("smtp.gmail.com");
         mailSender.setPort(587);
         mailSender.setUsername("davronbekdev07@gmail.com");
-        mailSender.setPassword("aridprrizerrhmow");
+        mailSender.setPassword("aridprrizerrhmow");//Google accountga kirib 2 bosqichli parolni ichidan app pasword bolimidan parol generatsiya qilinadi
         Properties properties = mailSender.getJavaMailProperties();
         properties.put("mail.transport.protocol","smtp");
         properties.put("mail.smtp.auth","true");

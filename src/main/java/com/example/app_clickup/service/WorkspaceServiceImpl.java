@@ -7,6 +7,7 @@ import com.example.app_clickup.entity.enums.WorkspaceRoleName;
 import com.example.app_clickup.payload.ApiResponse;
 import com.example.app_clickup.payload.MemberDTO;
 import com.example.app_clickup.payload.WorkspaceDTO;
+import com.example.app_clickup.payload.WorkspaceRoleDTO;
 import com.example.app_clickup.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
@@ -84,7 +85,13 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     @Override
     public ApiResponse editWorkspace(WorkspaceDTO workspaceDTO) {
-        return null;
+        Workspace workspace = workspaceRepository.findById(workspaceDTO.getId()).orElseThrow(()->new ResourceNotFoundException("Workspace"));
+        workspace.setColor(workspaceDTO.getColor());
+        workspace.setName(workspaceDTO.getName());
+        workspace.setAvatar(workspaceDTO.getAvatarId()==null?null:attachmentRepository.findById(workspaceDTO.getAvatarId()).orElseThrow(()->new ResourceNotFoundException("Avatar")));
+        workspaceRepository.save(workspace);
+        return new ApiResponse("Workspace edited",true);
+
     }
 
     @Override
@@ -134,7 +141,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             workspaceUserRepository.save(workspaceUser);
             return new ApiResponse("Muvaffaqiyatli", true);
         }
-        return new ApiResponse("Xatolik",false);
+        return new ApiResponse("Xatolik", false);
     }
 
     @Override
@@ -150,6 +157,48 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     @Override
+    public ApiResponse addRole(Long workspaceId, WorkspaceRoleDTO workspaceRoleDTO, User user) {
+        if(workspaceRoleRepository.existsByWorkspaceIdAndName(workspaceId,workspaceRoleDTO.getName())){
+            return  new ApiResponse("Error",false);
+        }
+        WorkspaceRole workspaceRole = workspaceRoleRepository.save(new WorkspaceRole(getMyWorkspaceAfterThrow(workspaceId), workspaceRoleDTO.getName(), workspaceRoleDTO.getExtendsRole()));
+        List<WorkspacePermission> workspacePermissions = workspacePermissionRepository.findAllByWorkspaceRole_NameAndWorkspaceRole_WorkspaceId(workspaceRoleDTO.getExtendsRole().name(), workspaceId);
+        List<WorkspacePermission> newWorkspacePermissions = new ArrayList<>();
+        for (WorkspacePermission workspacePermission : workspacePermissions) {
+            WorkspacePermission newWorkspacePermission = new WorkspacePermission(workspaceRole, workspacePermission.getPermissionName());
+            newWorkspacePermissions.add(workspacePermission);
+        }
+        workspacePermissionRepository.saveAll(newWorkspacePermissions);
+        return new ApiResponse("Accepted",true);
+    }
+
+    private Workspace getMyWorkspaceAfterThrow(Long workspaceId) {
+        return new Workspace();
+    }
+
+    @Override
+    public ApiResponse addOrRemovePermissionToRole(WorkspaceRoleDTO workspaceRoleDTO) {
+
+        WorkspaceRole workspaceRole = workspaceRoleRepository.findById(workspaceRoleDTO.getId()).orElseThrow(() -> new ResourceNotFoundException("workspaceRole"));
+        Optional<WorkspacePermission> optionalWorkspacePermission = workspacePermissionRepository.findByWorkspaceRoleIdAndPermissionName(workspaceRole.getId(), workspaceRoleDTO.getPermissionName());
+        if (workspaceRoleDTO.getAddType().equals(AddType.ADD)) {
+            if (optionalWorkspacePermission.isPresent()) {
+                return new ApiResponse("Allaqachon qo'shilgan", false);
+            }
+            WorkspacePermission workspacePermission = new WorkspacePermission(workspaceRole, workspaceRoleDTO.getPermissionName());
+            workspacePermissionRepository.save(workspacePermission);
+            return new ApiResponse("Muvaffaqiyatli qo'shidi", true);
+        } else if (workspaceRoleDTO.getAddType().equals(AddType.REMOVE)) {
+            if (optionalWorkspacePermission.isPresent()) {
+                workspacePermissionRepository.delete(optionalWorkspacePermission.get());
+                return new ApiResponse("Muvaffaqqiyatli o'chirildi", true);
+            }
+            return new ApiResponse("Bunday object yo'q", false);
+        }
+        return new ApiResponse("Bunday buyruq  yo'q", false);
+    }
+
+    @Override
     public List<WorkspaceDTO> getMyWorkspace(User user) {
         List<WorkspaceUser> workspaces = workspaceUserRepository.findAllByUserId(user.getId());
         return workspaces.stream().map(workspaceUser -> mapWorkspaceUserToWorkspaceDTO(workspaceUser.getWorkspace())).collect(Collectors.toList());
@@ -157,7 +206,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
     //My method
 
-    public WorkspaceDTO mapWorkspaceUserToWorkspaceDTO(Workspace workspace){
+    public WorkspaceDTO mapWorkspaceUserToWorkspaceDTO(Workspace workspace) {
         WorkspaceDTO workspaceDTO = new WorkspaceDTO();
         workspaceDTO.setId(workspace.getId());
         workspaceDTO.setName(workspace.getName());
@@ -167,12 +216,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         return workspaceDTO;
     }
 
-    public MemberDTO mapWorkspaceUserToMemberDTO(WorkspaceUser workspaceUser){
+    public MemberDTO mapWorkspaceUserToMemberDTO(WorkspaceUser workspaceUser) {
         MemberDTO memberDTO = new MemberDTO();
         memberDTO.setId(workspaceUser.getUser().getId());
         memberDTO.setFullName(workspaceUser.getUser().getFullName());
         memberDTO.setEmail(workspaceUser.getUser().getEmail());
-        memberDTO.setRoleName(workspaceUser.getWorkspace().getName());
+        memberDTO.setRoleName(workspaceUser.getWorkspaceRole().getName());
         memberDTO.setLastActive(workspaceUser.getUser().getLastActiveTime());
         return memberDTO;
     }
