@@ -12,10 +12,13 @@ import java.util.UUID;
 
 @Data
 public class WorkspaceDTO {
+    private Long id;
     @NotNull
     private String name;
     @NotNull
     private String color;
+
+    private String initialLetter;
 
     private UUID avatarId;
 

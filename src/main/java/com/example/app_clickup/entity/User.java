@@ -13,6 +13,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
+import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -33,7 +34,9 @@ public class User extends AbsUUIDEntity implements UserDetails {
 
     private String initialLetter;
 
-    private String emailCode;;
+    private String emailCode;
+
+    private Timestamp lastActiveTime;
 
     @OneToOne(fetch = FetchType.LAZY)
     private Attachment avatar;

@@ -10,8 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -34,6 +36,18 @@ public class WorkspaceController {
         return ResponseEntity.status(apiResponse.isSuccess() ? 200 : 409).body(apiResponse);
     }
 
+    @GetMapping("/member/{id}")
+    public HttpEntity<?> getMemberAndGuest(@PathVariable Long id){
+        List<MemberDTO> members = workspaceService.getMemberAndGuest(id);
+        return ResponseEntity.ok(members);
+    }
+
+    @GetMapping
+    public HttpEntity<?> getMyWorkspace(@CurrentUser User user){
+        List<WorkspaceDTO> workspaces = workspaceService.getMyWorkspace(user);
+        return ResponseEntity.ok(workspaces);
+    }
+
     @PutMapping("/changeOwner/{id}")
     public HttpEntity<?> changeOwnerWorkspace(@PathVariable Long id, @RequestParam UUID ownerId) {
         ApiResponse apiResponse = workspaceService.changeOwnerWorkspace(id, ownerId);
@@ -52,4 +66,13 @@ public class WorkspaceController {
         return ResponseEntity.status(apiResponse.isSuccess()?200:409).body(apiResponse);
 
     }
+
+    @PutMapping("/join")
+    public HttpEntity<?> joinToWorkspace(@RequestParam Long id, @CurrentUser User user){
+        ApiResponse apiResponse = workspaceService.joinToWorkspace(id, user);
+        return ResponseEntity.status(apiResponse.isSuccess()?200:409).body(apiResponse);
+
+
+    }
+
 }

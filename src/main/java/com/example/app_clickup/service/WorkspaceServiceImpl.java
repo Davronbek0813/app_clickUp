@@ -1,6 +1,7 @@
 package com.example.app_clickup.service;
 
 import com.example.app_clickup.entity.*;
+import com.example.app_clickup.entity.enums.AddType;
 import com.example.app_clickup.entity.enums.WorkspacePermissionName;
 import com.example.app_clickup.entity.enums.WorkspaceRoleName;
 import com.example.app_clickup.payload.ApiResponse;
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class WorkspaceServiceImpl implements WorkspaceService {
@@ -28,6 +31,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     WorkspaceRoleRepository workspaceRoleRepository;
     @Autowired
     WorkspacePermissionRepository workspacePermissionRepository;
+    @Autowired
+    UserRepository userRepository;
 
     @Override
     public ApiResponse addWorkspace(WorkspaceDTO workspaceDTO, User user) {
@@ -46,14 +51,29 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         workspaceRepository.save(workspace);
         //Workspace role ochildi
         WorkspaceRole ownerRole = workspaceRoleRepository.save(new WorkspaceRole(workspace, WorkspaceRoleName.ROLE_OWNER.name(), null));
+        WorkspaceRole adminRole = workspaceRoleRepository.save(new WorkspaceRole(workspace, WorkspaceRoleName.ROLE_ADMIN.name(), null));
+        WorkspaceRole memberRole = workspaceRoleRepository.save(new WorkspaceRole(workspace, WorkspaceRoleName.ROLE_MEMBER.name(), null));
+        WorkspaceRole guestRole = workspaceRoleRepository.save(new WorkspaceRole(workspace, WorkspaceRoleName.ROLE_GUEST.name(), null));
 
         //Ownerga huquqlar berish
         WorkspacePermissionName[] workspacePermissionNames = WorkspacePermissionName.values();
-        List<WorkspacePermission> workspacePermissions =new ArrayList<>();
+        List<WorkspacePermission> workspacePermissions = new ArrayList<>();
 
         for (WorkspacePermissionName workspacePermissionName : workspacePermissionNames) {
-            WorkspacePermission workspacePermission = new WorkspacePermission(ownerRole,workspacePermissionName);
+            WorkspacePermission workspacePermission = new WorkspacePermission(ownerRole, workspacePermissionName);
             workspacePermissions.add(workspacePermission);
+
+            if (workspacePermissionName.getWorkspaceRoleNames().contains(WorkspaceRoleName.ROLE_ADMIN)) {
+                workspacePermissions.add(new WorkspacePermission(adminRole, workspacePermissionName));
+            }
+
+            if (workspacePermissionName.getWorkspaceRoleNames().contains(WorkspaceRoleName.ROLE_MEMBER)) {
+                workspacePermissions.add(new WorkspacePermission(memberRole, workspacePermissionName));
+            }
+
+            if (workspacePermissionName.getWorkspaceRoleNames().contains(WorkspaceRoleName.ROLE_GUEST)) {
+                workspacePermissions.add(new WorkspacePermission(guestRole, workspacePermissionName));
+            }
         }
         workspacePermissionRepository.saveAll(workspacePermissions);
 
@@ -85,8 +105,75 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     @Override
     public ApiResponse addOrEditOrRemoveWorkspace(Long id, MemberDTO memberDTO) {
-        return null;
+        if (memberDTO.getAddType().equals(AddType.ADD)) {
+            WorkspaceUser workspaceUser = new WorkspaceUser(workspaceRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("id")),
+                    userRepository.findById(memberDTO.getId()).orElseThrow(() -> new ResourceNotFoundException("id")),
+                    workspaceRoleRepository.findById(memberDTO.getRoleId()).orElseThrow(() -> new ResourceNotFoundException("id")),
+                    new Timestamp(System.currentTimeMillis()),
+                    null
+            );
+            workspaceUserRepository.save(workspaceUser);
+            //TODO Emailga invite xabar yuborish
+        } else if (memberDTO.getAddType().equals(AddType.EDIT)) {
+            WorkspaceUser workspaceUser = workspaceUserRepository.findByWorkspaceIdAndUserId(id, memberDTO.getId()).orElseGet(WorkspaceUser::new);
+            workspaceUser.setWorkspaceRole(workspaceRoleRepository.findById(memberDTO.getRoleId()).orElseThrow(() -> new ResourceNotFoundException("id")));
+            workspaceUserRepository.save(workspaceUser);
+        } else if (memberDTO.getAddType().equals(AddType.REMOVE)) {
+            workspaceUserRepository.deleteByWorkspaceIdAndUserId(id, memberDTO.getId());
+        }
+
+        return new ApiResponse("Muvaffaqqiyatli", true);
     }
 
+    @Override
+    public ApiResponse joinToWorkspace(Long id, User user) {
+        Optional<WorkspaceUser> optionalWorkspaceUser = workspaceUserRepository.findByWorkspaceIdAndUserId(id, user.getId());
+        if (optionalWorkspaceUser.isPresent()) {
+            WorkspaceUser workspaceUser = optionalWorkspaceUser.get();
+            workspaceUser.setDateJoined(new Timestamp(System.currentTimeMillis()));
+            workspaceUserRepository.save(workspaceUser);
+            return new ApiResponse("Muvaffaqiyatli", true);
+        }
+        return new ApiResponse("Xatolik",false);
+    }
 
+    @Override
+    public List<MemberDTO> getMemberAndGuest(Long id) {
+        List<WorkspaceUser> workspaceUsers = workspaceUserRepository.findAllByWorkspaceId(id);
+//        List<MemberDTO> members = new ArrayList<>();
+
+//        for (WorkspaceUser workspaceUser : workspaceUsers) {
+//            members.add(mapWorkspaceUserToMemberDTO(workspaceUser));
+//        }
+        return workspaceUsers.stream().map(this::mapWorkspaceUserToMemberDTO).collect(Collectors.toList());
+
+    }
+
+    @Override
+    public List<WorkspaceDTO> getMyWorkspace(User user) {
+        List<WorkspaceUser> workspaces = workspaceUserRepository.findAllByUserId(user.getId());
+        return workspaces.stream().map(workspaceUser -> mapWorkspaceUserToWorkspaceDTO(workspaceUser.getWorkspace())).collect(Collectors.toList());
+
+    }
+    //My method
+
+    public WorkspaceDTO mapWorkspaceUserToWorkspaceDTO(Workspace workspace){
+        WorkspaceDTO workspaceDTO = new WorkspaceDTO();
+        workspaceDTO.setId(workspace.getId());
+        workspaceDTO.setName(workspace.getName());
+        workspaceDTO.setInitialLetter(workspace.getInitialLeter());
+        workspaceDTO.setAvatarId(workspace.getAvatar() == null ? null : workspace.getAvatar().getId());
+        workspaceDTO.setColor(workspace.getColor());
+        return workspaceDTO;
+    }
+
+    public MemberDTO mapWorkspaceUserToMemberDTO(WorkspaceUser workspaceUser){
+        MemberDTO memberDTO = new MemberDTO();
+        memberDTO.setId(workspaceUser.getUser().getId());
+        memberDTO.setFullName(workspaceUser.getUser().getFullName());
+        memberDTO.setEmail(workspaceUser.getUser().getEmail());
+        memberDTO.setRoleName(workspaceUser.getWorkspace().getName());
+        memberDTO.setLastActive(workspaceUser.getUser().getLastActiveTime());
+        return memberDTO;
+    }
 }
